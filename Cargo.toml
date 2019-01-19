@@ -1,0 +1,7 @@
+[package]
+name = "steamname"
+version = "0.1.0"
+authors = ["mgreen1980"]
+edition = "2018"
+
+[dependencies]
