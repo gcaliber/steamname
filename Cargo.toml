@@ -5,3 +5,4 @@ authors = ["mgreen1980"]
 edition = "2018"
 
 [dependencies]
+reqwest = "0.9.8"
