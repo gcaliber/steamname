@@ -1,15 +1,25 @@
 extern crate reqwest;
+extern crate serde_json;
 
-fn main() -> Result<(), Box<std::error::Error>> {
-    use std::io::Read;
+fn main() {
+    get_stuff("8930".to_string());
+}
 
-    let mut resp = reqwest::get("https://store.steampowered.com/api/appdetails/?appids=391220")?;
-    assert!(resp.status().is_success());
-
-    let mut content = String::new();
-
-    resp.read_to_string(&mut content).expect("could not read file");
+fn get_stuff(appid: String) {
+    let url = format!("https://store.steampowered.com/api/appdetails/?appids={}", appid);
     
-    println!("{:#?}", content);
-    Ok(())
+    match reqwest::get(&url) {
+        Ok(mut response) => {
+            if response.status() == reqwest::StatusCode::OK {
+                match response.text() {
+                    Ok(text) => println!("{}", text),
+                    Err(_) => println!("Unable to read response text")
+                }
+            }
+            else {
+                println!("Response NOT 200 Ok");
+            }
+        }
+        Err(_) => println!("Error: Did not get a response")
+    }
 }
