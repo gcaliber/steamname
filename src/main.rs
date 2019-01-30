@@ -17,24 +17,45 @@ fn main() {
         let json: serde_json::Value = serde_json::from_str(&response)
             .expect("Unable to parse, JSON was not well-formatted");
 
-        match json.get(id) {
-            Some(json_id) => match json_id.get("data") {
-                Some(json_data) => match json_data.get("name") {
-                    Some(json_name) => match json_name.as_str() {
-                        Some(name) => map.insert(name.to_string(), id.to_string()),
-                        None => continue,
-                    }
-                    None => continue,
-                }
-                None => continue,
-            }
-            None => continue,
+        match extract_name_from_json(json, id) {
+            Some(name) => map.insert(name, id.to_string()),
+            None => continue
         };
+
+        // match json.get(id) {
+        //     Some(json_id) => match json_id.get("data") {
+        //         Some(json_data) => match json_data.get("name") {
+        //             Some(json_name) => match json_name.as_str() {
+        //                 Some(name) => map.insert(name.to_string(), id.to_string()),
+        //                 None => continue,
+        //             }
+        //             None => continue,
+        //         }
+        //         None => continue,
+        //     }
+        //     None => continue,
+        // };
     }
 
     for (name, appid) in map.iter() { 
         println!("{:6} - {}", appid, name);
     }
+}
+
+fn extract_name_from_json(json: serde_json::Value, id: &str) -> Option<String> {
+    match json.get(id) {
+        Some(json_id) => match json_id.get("data") {
+            Some(json_data) => match json_data.get("name") {
+                Some(json_name) => match json_name.as_str() {
+                    Some(name) => return Some(name.to_string()),
+                    None => return None,
+                }
+                None => return None,
+            }
+            None => return None,
+        }
+        None => return None,
+    };
 }
 
 fn query_appid(appid: &String) -> String {
@@ -52,12 +73,14 @@ fn get_steam_library_path() -> Option<std::path::PathBuf> {
     match env::var_os("STEAM_DIR") {
         Some(val) => return Some(PathBuf::from(val)),
         None => {
-            let home = dirs::home_dir().unwrap();
-            let home_str = home.to_str().unwrap();
+            let home = dirs::home_dir().expect("Unable to determine $HOME");
+            let home_str = home.to_str().expect("Unable to convert $HOME to str");
+            
             let mut path = PathBuf::from(format!("{}/.steam/steam/steamapps", home_str));
             if path.exists() {
                 return Some(path);
             }
+            
             path = PathBuf::from(format!("{}/.steam/steam/SteamApps", home_str));
             if path.exists() {
                 return Some(path);
