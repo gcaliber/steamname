@@ -37,7 +37,7 @@ fn main() {
 }
 
 fn extract_name_from_json(json: serde_json::Value, id: &str) -> Option<String> {
-    Some(json.get(id)?.get("data")?.get("name")?.to_string())
+    Some(json.get(id)?.get("data")?.get("name")?.as_str()?.to_string())
 }
 
 fn query_appid(appid: &String) -> Option<String> {
