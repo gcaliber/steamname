@@ -12,29 +12,22 @@ fn main() {
     use std::collections::BTreeMap;
     let mut map: BTreeMap<String, String> = BTreeMap::new();
     for id in ids.iter() {
-        let response = query_appid(id);
-
-        let json: serde_json::Value = serde_json::from_str(&response)
-            .expect("Unable to parse, JSON was not well-formatted");
+        let json: serde_json::Value;
+        match query_appid(id) {
+            Some(response) => match serde_json::from_str(&response) {
+                Ok(j) => json = j,
+                Err(_) => {
+                    println!("Unable to parse JSON for appid {}", id);
+                    continue
+                }
+            }
+            None => continue
+        }
 
         match extract_name_from_json(json, id) {
             Some(name) => map.insert(name, id.to_string()),
             None => continue
         };
-
-        // match json.get(id) {
-        //     Some(json_id) => match json_id.get("data") {
-        //         Some(json_data) => match json_data.get("name") {
-        //             Some(json_name) => match json_name.as_str() {
-        //                 Some(name) => map.insert(name.to_string(), id.to_string()),
-        //                 None => continue,
-        //             }
-        //             None => continue,
-        //         }
-        //         None => continue,
-        //     }
-        //     None => continue,
-        // };
     }
 
     for (name, appid) in map.iter() { 
@@ -58,13 +51,24 @@ fn extract_name_from_json(json: serde_json::Value, id: &str) -> Option<String> {
     };
 }
 
-fn query_appid(appid: &String) -> String {
+fn query_appid(appid: &String) -> Option<String> {
     let url = format!("https://store.steampowered.com/api/appdetails/?appids={}", appid);
 
-    reqwest::get(&url)
-        .expect(&format!("Unable to get response for {}", appid))
-        .text()
-            .expect("Unable to parse response")
+    let mut attempt = 0;
+    while attempt < 3 {
+        match reqwest::get(&url) {
+            Ok(mut response) => {
+                if response.status() == reqwest::StatusCode::OK {
+                    match response.text() {
+                        Ok(s) => return Some(s),
+                        Err(_) => return None
+                    }
+                }
+            }
+            Err(_) => attempt += 1
+        }
+    }
+    return None;
 }
 
 fn get_steam_library_path() -> Option<std::path::PathBuf> {
