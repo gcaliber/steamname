@@ -12,10 +12,14 @@ fn main() {
     use std::collections::BTreeMap;
     let mut map: BTreeMap<String, String> = BTreeMap::new();
     for id in ids.iter() {
-        let json: serde_json::Value;
         match query_appid(id) {
             Some(response) => match serde_json::from_str(&response) {
-                Ok(j) => json = j,
+                Ok(json) => { 
+                    match extract_name_from_json(json, id) {
+                        Some(name) => map.insert(name, id.to_string()),
+                        None => continue
+                        };
+                    }
                 Err(_) => {
                     println!("Unable to parse JSON for appid {}", id);
                     continue
@@ -23,11 +27,6 @@ fn main() {
             }
             None => continue
         }
-
-        match extract_name_from_json(json, id) {
-            Some(name) => map.insert(name, id.to_string()),
-            None => continue
-        };
     }
 
     for (name, appid) in map.iter() { 
