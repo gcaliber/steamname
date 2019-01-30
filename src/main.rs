@@ -17,9 +17,19 @@ fn main() {
         let json: serde_json::Value = serde_json::from_str(&response)
             .expect("Unable to parse, JSON was not well-formatted");
 
-        let name = json.get(id).unwrap().get("data").unwrap().get("name").unwrap().as_str().unwrap();
-
-        map.insert(name.to_string(), id.to_string());
+        match json.get(id) {
+            Some(json_id) => match json_id.get("data") {
+                Some(json_data) => match json_data.get("name") {
+                    Some(json_name) => match json_name.as_str() {
+                        Some(name) => map.insert(name.to_string(), id.to_string()),
+                        None => continue,
+                    }
+                    None => continue,
+                }
+                None => continue,
+            }
+            None => continue,
+        };
     }
 
     for (name, appid) in map.iter() { 
