@@ -37,19 +37,7 @@ fn main() {
 }
 
 fn extract_name_from_json(json: serde_json::Value, id: &str) -> Option<String> {
-    match json.get(id) {
-        Some(json_id) => match json_id.get("data") {
-            Some(json_data) => match json_data.get("name") {
-                Some(json_name) => match json_name.as_str() {
-                    Some(name) => return Some(name.to_string()),
-                    None => return None,
-                }
-                None => return None,
-            }
-            None => return None,
-        }
-        None => return None,
-    };
+    Some(json.get(id)?.get("data")?.get("name")?.to_string())
 }
 
 fn query_appid(appid: &String) -> Option<String> {
