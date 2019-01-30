@@ -2,6 +2,8 @@ extern crate dirs;
 extern crate reqwest;
 extern crate serde_json;
 
+const MAX_REQUESTS: u32 = 3;
+
 fn main() {
     let mut ids: Vec<String> = std::env::args().skip(1).collect();
 
@@ -53,8 +55,8 @@ fn extract_name_from_json(json: serde_json::Value, id: &str) -> Option<String> {
 fn query_appid(appid: &String) -> Option<String> {
     let url = format!("https://store.steampowered.com/api/appdetails/?appids={}", appid);
 
-    let mut attempt = 0;
-    while attempt < 3 {
+    let mut attempt_count = 0;
+    while attempt_count < MAX_REQUESTS {
         match reqwest::get(&url) {
             Ok(mut response) => {
                 if response.status() == reqwest::StatusCode::OK {
@@ -64,7 +66,7 @@ fn query_appid(appid: &String) -> Option<String> {
                     }
                 }
             }
-            Err(_) => attempt += 1
+            Err(_) => attempt_count += 1
         }
     }
     return None;
@@ -73,18 +75,28 @@ fn query_appid(appid: &String) -> Option<String> {
 fn get_steam_library_path() -> Option<std::path::PathBuf> {
     use std::env;
     use std::path::PathBuf;
-    match env::var_os("STEAM_DIR") {
+    match env::var_os("STEAM_COMPATDATA") {
         Some(val) => return Some(PathBuf::from(val)),
         None => {
             let home = dirs::home_dir().expect("Unable to determine $HOME");
             let home_str = home.to_str().expect("Unable to convert $HOME to str");
             
-            let mut path = PathBuf::from(format!("{}/.steam/steam/steamapps", home_str));
+            let mut path = PathBuf::from(format!("{}/.steam/steam/steamapps/compatdata", home_str));
             if path.exists() {
                 return Some(path);
             }
             
-            path = PathBuf::from(format!("{}/.steam/steam/SteamApps", home_str));
+            path = PathBuf::from(format!("{}/.steam/steam/SteamApps/compatdata", home_str));
+            if path.exists() {
+                return Some(path);
+            }
+
+            path = PathBuf::from(format!("{}/.steam/steam/SteamApps/compatdata", home_str));
+            if path.exists() {
+                return Some(path);
+            }
+
+            path = PathBuf::from(format!("{}/.steam/Steam/steamapps/compatdata", home_str));
             if path.exists() {
                 return Some(path);
             }
@@ -110,7 +122,12 @@ fn parse_appid_directories() -> Vec<String> {
                 }
             }
         }
-        None => println!("Steam library not found at ~/.steam/steam/steamapps or ~/.steam/steam/SteamApps\nYou can set environment variable STEAM_DIR if you have another steam directory or\nuse steamname <appid> to manually check appids.")
+        None => println!(
+"Steam compatdata folder was not found. Either set environment variable STEAM_COMPATDATA or use
+steamname <appid> to manually check appids. You can supply any number of appids seperated by spaces.
+
+Examples: STEAM_COMPATDATA=\"/home/username/some/folder/steam/steamapps/\" steamname
+          steamname 8930 570")
     }
     return ids;
 }
