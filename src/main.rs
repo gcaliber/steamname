@@ -79,7 +79,7 @@ fn get_steam_library_path() -> Option<std::path::PathBuf> {
                 return Some(path);
             }
 
-            path = PathBuf::from(format!("{}/.steam/steam/SteamApps/compatdata", home_str));
+            path = PathBuf::from(format!("{}/.steam/Steam/SteamApps/compatdata", home_str));
             if path.exists() {
                 return Some(path);
             }
